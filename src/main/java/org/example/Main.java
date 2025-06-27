@@ -115,13 +115,16 @@ public class Main {
     public static boolean processLine(String line, Map<Integer, Map<String, List<String>>> columnMap) {
 
         String[] parts = line.split(";");
-        if (!Arrays.stream(parts).allMatch(s -> s.matches("^\"(\\d*)\"$"))) {
+        if (!Arrays.stream(parts)
+                .allMatch(s -> s.isEmpty() ||
+                        (s.startsWith("\"")) && s.endsWith("\"") && !s.substring(1, s.length() - 1).equals("\""))
+        ) {
             return false;
         }
 
         for (int i = 0; i < parts.length; i++) {
             String value = parts[i].trim();
-            if (!"\"\"".equals(value)) {
+            if (!"\"\"".equals(value) && !value.isEmpty()) {
                 columnMap.computeIfAbsent(i, k -> new HashMap<>())
                         .computeIfAbsent(value, k -> new ArrayList<>())
                         .add(line);
@@ -132,7 +135,8 @@ public class Main {
 
     public static void writeResult(String filePath, List<List<String>> result, long count) {
 
-        String newFilePath = filePath.replace("lng.txt", "result.txt");
+        Path oldFile = Path.of(filePath);
+        String newFilePath = filePath.replace(oldFile.getFileName().toString(), "result.txt");
         Path newFile = Path.of(newFilePath);
 
         if (!Files.exists(newFile)) {
@@ -159,7 +163,6 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("Ошибка записи файла");
-
         }
     }
 }
