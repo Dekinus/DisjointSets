@@ -13,10 +13,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
@@ -27,10 +26,9 @@ public class Main {
         LocalTime startTime = LocalTime.now();
 
         UnionFind uf = new UnionFind();
-        //Map<индекс колонки, Map<Элемент, Строка(List<элементов>)>
-        Map<Integer, Map<String, List<String>>> columnMap = new HashMap<>();
+        List<Map<String, List<String>>> columnMap = new ArrayList<>();
         String filePath = args[0];
-        Set<String> lines = new HashSet<>();
+        List<String> lines = new ArrayList<>();
         try (
                 FileReader fr = new FileReader(filePath);
                 BufferedReader br = new BufferedReader(fr)
@@ -47,7 +45,7 @@ public class Main {
             System.out.println("Ошибка чтения файла");
         }
 
-        for (Map<String, List<String>> column : columnMap.values()) {
+        for (Map<String, List<String>> column : columnMap) {
             for (List<String> group : column.values()) {
                 String first = group.get(0);
                 for (int i = 1; i < group.size(); i++) {
@@ -55,8 +53,10 @@ public class Main {
                 }
             }
         }
+        columnMap.clear();
 
         Map<String, List<String>> result = lines.stream()
+                .distinct()
                 .collect(Collectors.groupingBy(
                         uf::find,
                         toList()
@@ -112,7 +112,7 @@ public class Main {
         }
     }
 
-    public static boolean processLine(String line, Map<Integer, Map<String, List<String>>> columnMap) {
+    public static boolean processLine(String line, List<Map<String, List<String>>> columnMap) {
 
         String[] parts = line.split(";");
         if (!Arrays.stream(parts)
@@ -123,9 +123,12 @@ public class Main {
         }
 
         for (int i = 0; i < parts.length; i++) {
-            String value = parts[i].trim();
+            if (columnMap.size() <= i) {
+                columnMap.add(new IdentityHashMap<>());
+            }
+            String value = parts[i].trim().intern();
             if (!"\"\"".equals(value) && !value.isEmpty()) {
-                columnMap.computeIfAbsent(i, k -> new HashMap<>())
+                columnMap.get(i)
                         .computeIfAbsent(value, k -> new ArrayList<>())
                         .add(line);
             }
